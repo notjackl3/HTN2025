@@ -32,6 +32,11 @@ if [ ! -f "backend/.env" ]; then
     echo "   You can run the app without API keys (with limited functionality)."
 fi
 
+export GEMINI_API_KEY=AIzaSyBqJC7FmdwBhT8IfxmVvnRfHWN1_9d_5ws
+export COHERE_API_KEY=VvHZYeIq7vhecJLjKwdwZV5MmW7yN7Jr6T2KANQZ
+echo $GEMINI_API_KEY
+echo $COHERE_API_KEY
+
 # Start the server
 echo "🚀 Starting FastAPI server..."
 cd backend

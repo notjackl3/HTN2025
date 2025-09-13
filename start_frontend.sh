@@ -22,4 +22,5 @@ npm install
 
 # Start the development server
 echo "🚀 Starting React development server..."
+cd frontend
 npm start
