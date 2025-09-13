@@ -1,13 +1,22 @@
+# Core FastAPI dependencies
 fastapi==0.104.1
 uvicorn==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# Computer Vision and ML
 opencv-python==4.8.1.78
 numpy>=1.26.0
-boto3==1.34.0
-cohere==4.37
-google-generativeai==0.3.2
-python-multipart==0.0.6
 Pillow>=10.2.0
 mediapipe==0.10.7
 face-recognition==1.3.0
-python-dotenv==1.0.0
+
+# Cloud and AI services
+boto3==1.34.0
+cohere==4.37
+google-generativeai==0.3.2
+
+# Additional dependencies for better compatibility
+requests>=2.25.0
+aiohttp>=3.0.0
 

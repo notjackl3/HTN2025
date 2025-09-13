@@ -4,36 +4,43 @@ import AdvancedDashboard from './components/AdvancedDashboard';
 import CameraView from './components/CameraView';
 import ModeSelector from './components/ModeSelector';
 import TestModeSelector from './components/TestModeSelector';
-import { getUserBalance, getUserQuests, getUserBets } from './services/api';
+import { getUserBalance, getUserQuests, getUserBets, healthCheck } from './services/api';
 
 function App() {
   const [currentMode, setCurrentMode] = useState(null);
   const [userBalance, setUserBalance] = useState(100);
   const [userQuests, setUserQuests] = useState([]);
   const [userBets, setUserBets] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [backendStatus, setBackendStatus] = useState('checking');
   const [useAdvancedDashboard, setUseAdvancedDashboard] = useState(true);
   const [useTestMode, setUseTestMode] = useState(true);
 
   const userId = 'default_user'; // In a real app, this would come from authentication
 
   useEffect(() => {
-    loadUserData();
-    
-    // Fallback timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        console.log('Loading timeout reached, setting loading to false');
-        setIsLoading(false);
-      }
-    }, 5000); // 5 second timeout
-    
-    return () => clearTimeout(timeout);
+    checkBackendAndLoadData();
   }, []);
+
+  const checkBackendAndLoadData = async () => {
+    try {
+      await healthCheck();
+      setBackendStatus('connected');
+      console.log('✅ Backend is connected');
+      await loadUserData();
+    } catch (error) {
+      console.error('❌ Backend connection failed:', error);
+      setBackendStatus('disconnected');
+      setUserBalance(100);
+      setUserQuests([]);
+      setUserBets([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadUserData = async () => {
     try {
-      setIsLoading(true);
       console.log('Loading user data...');
       
       // Try to load data, but don't fail if backend is not available
@@ -90,24 +97,48 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading GooseTokens...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-bounce">🦆</div>
+          <div className="text-white text-2xl font-bold mb-2">Loading GooseTokens...</div>
+          <div className="text-blue-200 text-sm">Connecting to backend...</div>
+          <div className="mt-4 w-64 bg-white bg-opacity-20 rounded-full h-2">
+            <div className="bg-yellow-400 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800">
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800 relative">
+      {/* Backend Status Indicator */}
+      <div className="fixed top-4 right-4 z-50 pointer-events-none">
+        <div className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${
+          backendStatus === 'connected' 
+            ? 'bg-green-500 text-white' 
+            : backendStatus === 'disconnected'
+            ? 'bg-red-500 text-white'
+            : 'bg-yellow-500 text-white'
+        }`}>
+          {backendStatus === 'connected' ? '🟢 Backend Connected' : 
+           backendStatus === 'disconnected' ? '🔴 Backend Offline' : 
+           '🟡 Connecting...'}
+        </div>
+      </div>
+
       {!currentMode ? (
         useTestMode ? (
           <TestModeSelector 
             onModeSelect={handleModeSelect}
             userBalance={userBalance}
+            backendStatus={backendStatus}
           />
         ) : (
           <ModeSelector 
             onModeSelect={handleModeSelect}
             userBalance={userBalance}
+            backendStatus={backendStatus}
           />
         )
       ) : (
@@ -117,6 +148,9 @@ function App() {
               <AdvancedDashboard 
                 onBack={handleBackToModeSelect}
                 onQuestComplete={handleQuestComplete}
+                userBalance={userBalance}
+                userQuests={userQuests}
+                userBets={userBets}
               />
             ) : (
               <Dashboard 
@@ -133,6 +167,7 @@ function App() {
               mode={currentMode}
               onQuestComplete={handleQuestComplete}
               onBetPlaced={handleBetPlaced}
+              backendStatus={backendStatus}
             />
           </div>
         </div>

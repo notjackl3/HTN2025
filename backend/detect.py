@@ -60,32 +60,41 @@ SPONSOR_CATEGORIES = {
 def load_object_detection_model():
     """Load the MobileNet SSD model for object detection"""
     try:
-        # Try to load the model files (you'll need to download these)
-        net = cv2.dnn.readNetFromCaffe(
-            'MobileNetSSD_deploy.prototxt',
-            'MobileNetSSD_deploy.caffemodel'
-        )
+        # Try to load the model files from models directory
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        prototxt_path = os.path.join(script_dir, 'models', 'MobileNetSSD_deploy.prototxt')
+        caffemodel_path = os.path.join(script_dir, 'models', 'MobileNetSSD_deploy.caffemodel')
+        
+        net = cv2.dnn.readNetFromCaffe(prototxt_path, caffemodel_path)
+        print("✅ MobileNet SSD model loaded successfully!")
         return net
-    except:
+    except Exception as e:
         # Fallback: return None if model files not found
-        print("Warning: MobileNet SSD model files not found. Object detection will be limited.")
+        print(f"Warning: MobileNet SSD model files not found. Object detection will be limited. Error: {e}")
         return None
 
 def load_yolo_model():
     """Load YOLO model for better object detection"""
     try:
-        # Try to load YOLO model
-        net = cv2.dnn.readNet('yolov4.weights', 'yolov4.cfg')
+        # Try to load YOLO model from models directory
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        weights_path = os.path.join(script_dir, 'models', 'yolov4-tiny.weights')
+        cfg_path = os.path.join(script_dir, 'models', 'yolov4-tiny.cfg')
+        
+        net = cv2.dnn.readNet(weights_path, cfg_path)
+        print("✅ YOLO model loaded successfully!")
         return net
-    except:
-        print("Warning: YOLO model files not found. Using fallback detection.")
+    except Exception as e:
+        print(f"Warning: YOLO model files not found. Using fallback detection. Error: {e}")
         return None
 
 # Global model variables
 object_net = load_object_detection_model()
 yolo_net = load_yolo_model()
 
-def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.4) -> Dict:
+def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.1) -> Dict:
     """
     Enhanced object detection with sponsor categorization and external webcam optimization
     
@@ -97,7 +106,7 @@ def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.
         Dictionary with detected objects, sponsor categories, and betting opportunities
     """
     if object_net is None and yolo_net is None:
-        # Fallback: return mock data for demo
+        # Fallback: return mock data for demo with bounding boxes
         return {
             "objects": ["laptop", "coffee cup", "phone"],
             "sponsor_categories": ["tech_giants"],
@@ -109,7 +118,36 @@ def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.
                     "confidence": 0.8
                 }
             ],
-            "total_objects": 3
+            "total_objects": 3,
+            "detections": [
+                {
+                    "x": 100,
+                    "y": 100,
+                    "width": 200,
+                    "height": 150,
+                    "label": "laptop",
+                    "confidence": 0.85,
+                    "class": "laptop"
+                },
+                {
+                    "x": 350,
+                    "y": 200,
+                    "width": 80,
+                    "height": 120,
+                    "label": "coffee cup",
+                    "confidence": 0.75,
+                    "class": "coffee cup"
+                },
+                {
+                    "x": 500,
+                    "y": 150,
+                    "width": 100,
+                    "height": 180,
+                    "label": "phone",
+                    "confidence": 0.90,
+                    "class": "phone"
+                }
+            ]
         }
     
     try:
@@ -126,20 +164,27 @@ def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.
         detected_objects = []
         sponsor_categories = set()
         betting_opportunities = []
+        all_detections = []
         
         # Try YOLO first (better accuracy)
         if yolo_net is not None:
+            print(f"Trying YOLO detection with confidence threshold: {confidence_threshold}")
             yolo_results = detect_with_yolo(frame, confidence_threshold)
+            print(f"YOLO results: {yolo_results}")
             detected_objects.extend(yolo_results["objects"])
             sponsor_categories.update(yolo_results["sponsor_categories"])
             betting_opportunities.extend(yolo_results["betting_opportunities"])
+            all_detections.extend(yolo_results["detections"])
         
         # Fallback to MobileNet SSD
         if object_net is not None and len(detected_objects) == 0:
+            print(f"Trying MobileNet SSD detection with confidence threshold: {confidence_threshold}")
             ssd_results = detect_with_mobilenet(frame, confidence_threshold)
+            print(f"MobileNet SSD results: {ssd_results}")
             detected_objects.extend(ssd_results["objects"])
             sponsor_categories.update(ssd_results["sponsor_categories"])
             betting_opportunities.extend(ssd_results["betting_opportunities"])
+            all_detections.extend(ssd_results["detections"])
         
         # Remove duplicates and filter
         detected_objects = list(set(detected_objects))
@@ -149,12 +194,13 @@ def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.
             "objects": detected_objects,
             "sponsor_categories": sponsor_categories,
             "betting_opportunities": betting_opportunities,
-            "total_objects": len(detected_objects)
+            "total_objects": len(detected_objects),
+            "detections": all_detections
         }
     
     except Exception as e:
         print(f"Error in enhanced object detection: {e}")
-        return {"objects": [], "sponsor_categories": [], "betting_opportunities": [], "total_objects": 0}
+        return {"objects": [], "sponsor_categories": [], "betting_opportunities": [], "total_objects": 0, "detections": []}
 
 def preprocess_external_camera_frame(frame):
     """Preprocess frame for external webcam (shirt clip perspective)"""
@@ -189,6 +235,7 @@ def detect_with_yolo(frame, confidence_threshold):
         detected_objects = []
         sponsor_categories = set()
         betting_opportunities = []
+        detections = []
         
         # Process detections
         for output in outputs:
@@ -200,6 +247,27 @@ def detect_with_yolo(frame, confidence_threshold):
                 if confidence > confidence_threshold and class_id < len(CLASSES):
                     object_name = CLASSES[class_id]
                     detected_objects.append(object_name)
+                    
+                    # Extract bounding box coordinates
+                    center_x = int(detection[0] * width)
+                    center_y = int(detection[1] * height)
+                    w = int(detection[2] * width)
+                    h = int(detection[3] * height)
+                    
+                    # Convert to top-left corner format
+                    x = int(center_x - w / 2)
+                    y = int(center_y - h / 2)
+                    
+                    # Store detection with bounding box
+                    detections.append({
+                        "x": x,
+                        "y": y,
+                        "width": w,
+                        "height": h,
+                        "label": object_name,
+                        "confidence": float(confidence),
+                        "class": object_name
+                    })
                     
                     # Check sponsor categories
                     category_info = get_sponsor_category(object_name)
@@ -215,12 +283,13 @@ def detect_with_yolo(frame, confidence_threshold):
         return {
             "objects": detected_objects,
             "sponsor_categories": list(sponsor_categories),
-            "betting_opportunities": betting_opportunities
+            "betting_opportunities": betting_opportunities,
+            "detections": detections
         }
     
     except Exception as e:
         print(f"Error in YOLO detection: {e}")
-        return {"objects": [], "sponsor_categories": [], "betting_opportunities": []}
+        return {"objects": [], "sponsor_categories": [], "betting_opportunities": [], "detections": []}
 
 def detect_with_mobilenet(frame, confidence_threshold):
     """Detect objects using MobileNet SSD model"""
@@ -241,6 +310,7 @@ def detect_with_mobilenet(frame, confidence_threshold):
         detected_objects = []
         sponsor_categories = set()
         betting_opportunities = []
+        detection_boxes = []
         
         # Process detections
         for i in range(detections.shape[2]):
@@ -251,6 +321,31 @@ def detect_with_mobilenet(frame, confidence_threshold):
                 if idx < len(CLASSES):
                     object_name = CLASSES[idx]
                     detected_objects.append(object_name)
+                    
+                    # Extract bounding box coordinates
+                    box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                    (x, y, x1, y1) = box.astype("int")
+                    
+                    # Ensure coordinates are within frame bounds
+                    x = max(0, min(x, w))
+                    y = max(0, min(y, h))
+                    x1 = max(0, min(x1, w))
+                    y1 = max(0, min(y1, h))
+                    
+                    # Calculate width and height
+                    width = x1 - x
+                    height = y1 - y
+                    
+                    # Store detection with bounding box
+                    detection_boxes.append({
+                        "x": int(x),
+                        "y": int(y),
+                        "width": int(width),
+                        "height": int(height),
+                        "label": object_name,
+                        "confidence": float(confidence),
+                        "class": object_name
+                    })
                     
                     # Check sponsor categories
                     category_info = get_sponsor_category(object_name)
@@ -266,12 +361,13 @@ def detect_with_mobilenet(frame, confidence_threshold):
         return {
             "objects": detected_objects,
             "sponsor_categories": list(sponsor_categories),
-            "betting_opportunities": betting_opportunities
+            "betting_opportunities": betting_opportunities,
+            "detections": detection_boxes
         }
     
     except Exception as e:
         print(f"Error in MobileNet detection: {e}")
-        return {"objects": [], "sponsor_categories": [], "betting_opportunities": []}
+        return {"objects": [], "sponsor_categories": [], "betting_opportunities": [], "detections": []}
 
 def get_sponsor_category(object_name):
     """Get sponsor category information for an object"""
