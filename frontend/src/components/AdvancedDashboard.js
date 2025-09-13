@@ -80,32 +80,31 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="h-full flex flex-col bg-gray-200">
+      <button
+        onClick={onBack}
+        className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white transition-colors"
+      >
+        ← Back to Modes
+      </button>
       {/* Header */}
       <div className="p-6 border-b border-white/10">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white">GooseTokens Command Center</h1>
-            <p className="text-slate-300">Advanced analytics and real-time tracking</p>
+            <h1 className="text-5xl m-5 font-bold text-black text-center">Command Center</h1>
           </div>
-          <button
-            onClick={onBack}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-          >
-            ← Back to Modes
-          </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-slate-800/50 rounded-lg p-1">
+        <div className="overflow-x-auto no-scrollbar flex justify-center space-x-1 bg-transparent border-2 border-slate-400 rounded-lg p-1">
           {['overview', 'analytics', 'sponsors', 'leaderboard', 'history'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab
-                  ? 'bg-white text-slate-900'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-white text-black'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-400'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -165,10 +164,10 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
 
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-slate-800/50 border-slate-700">
+              <Card className="bg-slate-300 border-2 border-slate-400">
                 <CardHeader>
-                  <CardTitle className="text-white">Recent Quests</CardTitle>
-                  <CardDescription className="text-slate-400">Latest networking achievements</CardDescription>
+                  <CardTitle className="text-black">Recent Quests</CardTitle>
+                  <CardDescription className="text-slate-700">Latest networking achievements</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -182,16 +181,16 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
                       </div>
                     ))}
                     {completedQuests.length === 0 && (
-                      <p className="text-slate-400 text-sm text-center py-4">No completed quests yet</p>
+                      <p className="text-slate-400 text-sm text-center">No completed quests yet</p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-800/50 border-slate-700">
+              <Card className="bg-slate-300 border-2 border-slate-400">
                 <CardHeader>
-                  <CardTitle className="text-white">Recent Bets</CardTitle>
-                  <CardDescription className="text-slate-400">Latest betting activity</CardDescription>
+                  <CardTitle className="text-black">Recent Bets</CardTitle>
+                  <CardDescription className="text-slate-700">Latest betting activity</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -213,7 +212,7 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
                       </div>
                     ))}
                     {completedBets.length === 0 && (
-                      <p className="text-slate-400 text-sm text-center py-4">No completed bets yet</p>
+                      <p className="text-slate-400 text-sm text-center">No completed bets yet</p>
                     )}
                   </div>
                 </CardContent>
@@ -244,7 +243,7 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
 
         {activeTab === 'sponsors' && (
           <div className="space-y-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-slate-300 border-2 border-slate-400">
               <CardHeader>
                 <CardTitle className="text-white">Sponsor Performance</CardTitle>
                 <CardDescription className="text-slate-400">Breakdown by sponsor category</CardDescription>
@@ -313,7 +312,7 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
 
         {activeTab === 'history' && (
           <div className="space-y-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-slate-300 border-2 border-slate-400">
               <CardHeader>
                 <CardTitle className="text-white">Betting History</CardTitle>
                 <CardDescription className="text-slate-400">Complete betting activity log</CardDescription>

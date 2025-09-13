@@ -105,43 +105,43 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
 
       {/* Live Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-slate-300 border-2 border-slate-400">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-xs">Active Bets</p>
-                <p className="text-2xl font-bold text-white">{liveStats.activeBets}</p>
+                <p className="text-2xl font-bold text-black">{liveStats.activeBets}</p>
               </div>
               <div className="text-2xl">🎲</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-slate-300 border-2 border-slate-400">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-xs">Win Rate</p>
-                <p className="text-2xl font-bold text-white">{liveStats.winRate}%</p>
+                <p className="text-2xl font-bold text-black">{liveStats.winRate}%</p>
               </div>
               <div className="text-2xl">📊</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-slate-300 border-2 border-slate-400">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-xs">Quests Done</p>
-                <p className="text-2xl font-bold text-white">{liveStats.completedQuests}</p>
+                <p className="text-2xl font-bold text-black">{liveStats.completedQuests}</p>
               </div>
               <div className="text-2xl">🎯</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-slate-300 border-2 border-slate-400">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -165,7 +165,7 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
           <CardContent className="pt-0">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-semibold">{liveStats.topSponsor[0]}</p>
+                <p className="text-black font-semibold">{liveStats.topSponsor[0]}</p>
                 <p className="text-yellow-200 text-sm">
                   +{liveStats.topSponsor[1].net_profit} profit
                 </p>
@@ -191,9 +191,9 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
       )}
 
       {/* Live Activity Feed */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-slate-300 border-2 border-slate-400">
         <CardHeader className="pb-2">
-          <CardTitle className="text-white text-sm">⚡ Live Activity</CardTitle>
+          <CardTitle className="text-black text-md">Live Activity</CardTitle>
           <CardDescription className="text-slate-400 text-xs">Real-time updates</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -203,7 +203,7 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
                 <div key={index} className="flex items-center space-x-3 p-2 bg-slate-700/30 rounded-lg">
                   <div className="text-lg">{getActivityIcon(activity.type, activity.action)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm truncate">{activity.description}</p>
+                    <p className="text-black text-sm truncate">{activity.description}</p>
                     <p className="text-slate-400 text-xs">
                       {activity.timestamp.toLocaleTimeString()}
                     </p>
@@ -221,16 +221,16 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
       </Card>
 
       {/* Performance Trends */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-slate-300 border-2 border-slate-400">
         <CardHeader className="pb-2">
-          <CardTitle className="text-white text-sm">📈 Performance Trends</CardTitle>
+          <CardTitle className="text-black text-md">Performance Trends</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-slate-300">Betting Success</span>
-                <span className="text-white">{liveStats.winRate}%</span>
+                <span className="text-black">{liveStats.winRate}%</span>
               </div>
               <Progress value={liveStats.winRate} className="h-2" />
             </div>
@@ -238,7 +238,7 @@ const RealTimeAnalytics = ({ userBalance, moneyStats, userBets, userQuests }) =>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-slate-300">Quest Completion</span>
-                <span className="text-white">
+                <span className="text-black">
                   {userQuests.length > 0 ? Math.round((liveStats.completedQuests / userQuests.length) * 100) : 0}%
                 </span>
               </div>

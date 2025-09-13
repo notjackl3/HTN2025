@@ -300,16 +300,6 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
 
   return (
     <div className="h-full flex flex-col bg-black">
-      {/* Minimal Header */}
-      <div className="absolute top-4 left-4 z-20">
-        <button
-          onClick={() => window.history.back()}
-          className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg hover:bg-opacity-70 transition-all"
-        >
-          ← Back
-        </button>
-      </div>
-
       {/* Camera View - Full Screen */}
       <div className="flex-1 relative h-screen">
         <video
