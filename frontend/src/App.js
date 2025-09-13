@@ -113,20 +113,6 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800 relative">
       {/* Backend Status Indicator */}
-      <div className="fixed top-4 right-4 z-50 pointer-events-none">
-        <div className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${
-          backendStatus === 'connected' 
-            ? 'bg-green-500 text-white' 
-            : backendStatus === 'disconnected'
-            ? 'bg-red-500 text-white'
-            : 'bg-yellow-500 text-white'
-        }`}>
-          {backendStatus === 'connected' ? '🟢 Backend Connected' : 
-           backendStatus === 'disconnected' ? '🔴 Backend Offline' : 
-           '🟡 Connecting...'}
-        </div>
-      </div>
-
       {!currentMode ? (
         useTestMode ? (
           <TestModeSelector 

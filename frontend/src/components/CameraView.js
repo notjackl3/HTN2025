@@ -9,7 +9,7 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
   const [detectionResults, setDetectionResults] = useState(null);
   const [error, setError] = useState(null);
   const [boundingBoxes, setBoundingBoxes] = useState([]);
-  const [isRealTimeDetection, setIsRealTimeDetection] = useState(false);
+  const [isRealTimeDetection, setIsRealTimeDetection] = useState(true);
   const [detectionInterval, setDetectionInterval] = useState(null);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
     if (isRealTimeDetection && stream) {
       const interval = setInterval(() => {
         performRealTimeDetection();
-      }, 1000); // Detect every second
+      }, 500); // Detect every 500ms for smoother real-time experience
       
       setDetectionInterval(interval);
       
@@ -72,10 +72,8 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Auto-start real-time detection after camera loads
-        setTimeout(() => {
-          setIsRealTimeDetection(true);
-        }, 2000);
+        // Start real-time detection immediately
+        setIsRealTimeDetection(true);
       }
     } catch (err) {
       setError('Camera access denied. Please allow camera access to use this feature.');
@@ -103,11 +101,24 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
     if (!videoRef.current || isDetecting) return;
 
     try {
-      const photoBlob = await capturePhoto();
-      if (!photoBlob) return;
+      // Create a canvas to capture video frame
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      // Set canvas size to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw current video frame to canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert canvas to blob
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+      if (!blob) return;
 
       const formData = new FormData();
-      formData.append('file', photoBlob, 'photo.jpg');
+      formData.append('file', blob, 'frame.jpg');
 
       let response;
       if (mode === 'serious') {
@@ -289,42 +300,14 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
 
   return (
     <div className="h-full flex flex-col bg-black">
-      {/* Header */}
-      <div className="bg-white bg-opacity-10 backdrop-blur-lg p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => window.history.back()}
-            className="text-white hover:text-blue-200 transition-colors"
-          >
-            ← Back
-          </button>
-          <h2 className="text-xl font-bold text-white">
-            {mode === 'serious' ? '🎯 Serious Mode' : '🎲 Fun Mode'}
-          </h2>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setIsRealTimeDetection(!isRealTimeDetection)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              isRealTimeDetection
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-gray-600 hover:bg-gray-700 text-white'
-            }`}
-          >
-            {isRealTimeDetection ? '🟢 Live Detection ON' : '⚪ Live Detection OFF'}
-          </button>
-          <button
-            onClick={handleDetection}
-            disabled={isDetecting}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-              isDetecting
-                ? 'bg-gray-500 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
-          >
-            {isDetecting ? 'Detecting...' : 'Manual Detect'}
-          </button>
-        </div>
+      {/* Minimal Header */}
+      <div className="absolute top-4 left-4 z-20">
+        <button
+          onClick={() => window.history.back()}
+          className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg hover:bg-opacity-70 transition-all"
+        >
+          ← Back
+        </button>
       </div>
 
       {/* Camera View - Full Screen */}
@@ -342,119 +325,22 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
           style={{ zIndex: 5 }}
         />
         
-        {/* Status Overlay - Positioned to not interfere with detection boxes */}
-        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 15 }}>
-          <div className="absolute top-4 left-4 bg-black bg-opacity-70 rounded-lg p-3 max-w-xs">
+        {/* Minimal Status - Only show when objects are detected */}
+        {boundingBoxes.length > 0 && (
+          <div className="absolute top-4 right-4 z-20 bg-black bg-opacity-70 rounded-lg p-3">
             <div className="text-white text-sm">
-              {isRealTimeDetection ? (
-                <div>
-                  <div className="font-bold text-green-400 mb-1">🟢 Live Detection Active</div>
-                  <div>Detecting objects with 80%+ confidence</div>
-                </div>
-              ) : (
-                <div>
-                  {mode === 'serious' ? 'Point camera at people to detect networking opportunities' : 'Point camera at objects to create betting lines'}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Detection Status */}
-          {isRealTimeDetection && (
-            <div className="absolute top-4 right-4 bg-black bg-opacity-70 rounded-lg p-3">
-              <div className="text-white text-sm">
-                <div className="font-bold text-blue-400">Objects Detected: {boundingBoxes.length}</div>
-                {boundingBoxes.length > 0 && (
-                  <div className="text-xs mt-1">
-                    {boundingBoxes.map((box, i) => (
-                      <div key={i} className="text-green-300">
-                        {box.label} ({(box.confidence * 100).toFixed(0)}%)
-                      </div>
-                    ))}
+              <div className="font-bold text-green-400">Objects: {boundingBoxes.length}</div>
+              <div className="text-xs mt-1">
+                {boundingBoxes.map((box, i) => (
+                  <div key={i} className="text-green-300">
+                    {box.label} ({(box.confidence * 100).toFixed(0)}%)
                   </div>
-                )}
+                ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Detection Results - Only show when not in real-time mode */}
-        {detectionResults && !isRealTimeDetection && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-95 backdrop-blur-lg p-6 max-h-96 overflow-y-auto" style={{ zIndex: 20 }}>
-            <div className="space-y-4">
-              <div className="text-lg font-bold text-gray-800">
-                {detectionResults.message}
-              </div>
-
-              {mode === 'serious' && detectionResults.quests && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700">Networking Quests:</h3>
-                  {detectionResults.quests.map((quest, index) => (
-                    <div key={quest.id || index} className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-800 mb-2">
-                            Quest: {quest.description}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            Target: {quest.target} • Reward: {quest.reward} tokens
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleQuestComplete(quest.id)}
-                          className="ml-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Complete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {mode === 'fun' && detectionResults.betting_lines && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700">
-                    Detected Objects: {detectionResults.objects_detected?.join(', ')}
-                  </h3>
-                  {detectionResults.sponsor_categories && detectionResults.sponsor_categories.length > 0 && (
-                    <div className="text-sm text-blue-600 mb-2">
-                      Sponsor Categories: {detectionResults.sponsor_categories.join(', ')}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    {detectionResults.betting_lines.map((bet, index) => (
-                      <div key={index} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800 mb-1">
-                              {bet.line}
-                            </div>
-                            <div className="text-sm text-gray-600 mb-2">
-                              Odds: {bet.odds} • Stake: {bet.base_stake} tokens
-                            </div>
-                            <div className="text-xs text-blue-600 mb-2">
-                              Sponsored by: {bet.sponsor} • Multiplier: {bet.multiplier}x
-                            </div>
-                            <div className="text-xs text-green-600 font-semibold">
-                              Potential Win: {bet.max_potential_win} tokens
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleBetPlaced(bet)}
-                            className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Bet {bet.base_stake} Tokens
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
+
 
         {/* Error Message */}
         {error && (
