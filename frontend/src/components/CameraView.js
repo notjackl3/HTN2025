@@ -8,6 +8,9 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectionResults, setDetectionResults] = useState(null);
   const [error, setError] = useState(null);
+  const [boundingBoxes, setBoundingBoxes] = useState([]);
+  const [isRealTimeDetection, setIsRealTimeDetection] = useState(false);
+  const [detectionInterval, setDetectionInterval] = useState(null);
 
   useEffect(() => {
     startCamera();
@@ -15,8 +18,46 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      if (detectionInterval) {
+        clearInterval(detectionInterval);
+      }
     };
   }, []);
+
+  // Redraw bounding boxes when video loads or resizes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const handleLoadedMetadata = () => {
+        if (detectionResults?.detections) {
+          setTimeout(() => drawBoundingBoxes(), 100);
+        }
+      };
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    }
+  }, [detectionResults]);
+
+  // Real-time detection effect
+  useEffect(() => {
+    if (isRealTimeDetection && stream) {
+      const interval = setInterval(() => {
+        performRealTimeDetection();
+      }, 1000); // Detect every second
+      
+      setDetectionInterval(interval);
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    } else if (detectionInterval) {
+      clearInterval(detectionInterval);
+      setDetectionInterval(null);
+    }
+  }, [isRealTimeDetection, stream]);
 
   const startCamera = async () => {
     try {
@@ -31,6 +72,10 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Auto-start real-time detection after camera loads
+        setTimeout(() => {
+          setIsRealTimeDetection(true);
+        }, 2000);
       }
     } catch (err) {
       setError('Camera access denied. Please allow camera access to use this feature.');
@@ -51,6 +96,103 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
 
     return new Promise((resolve) => {
       canvas.toBlob(resolve, 'image/jpeg', 0.8);
+    });
+  };
+
+  const performRealTimeDetection = async () => {
+    if (!videoRef.current || isDetecting) return;
+
+    try {
+      const photoBlob = await capturePhoto();
+      if (!photoBlob) return;
+
+      const formData = new FormData();
+      formData.append('file', photoBlob, 'photo.jpg');
+
+      let response;
+      if (mode === 'serious') {
+        response = await seriousModeDetection(formData);
+      } else {
+        response = await funModeDetection(formData);
+      }
+
+      // Filter detections with 80%+ confidence
+      const highConfidenceDetections = response.detections?.filter(
+        detection => detection.confidence >= 0.8
+      ) || [];
+
+      if (highConfidenceDetections.length > 0) {
+        setBoundingBoxes(highConfidenceDetections);
+        setTimeout(() => drawBoundingBoxes(), 50);
+      } else {
+        // Clear boxes if no high confidence detections
+        setBoundingBoxes([]);
+        clearBoundingBoxes();
+      }
+    } catch (err) {
+      console.error('Real-time detection error:', err);
+    }
+  };
+
+  const clearBoundingBoxes = () => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const drawBoundingBoxes = () => {
+    if (!videoRef.current || !boundingBoxes.length) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Clear previous drawings
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw bounding boxes
+    boundingBoxes.forEach((detection, index) => {
+      const { x, y, width, height, label, confidence } = detection;
+      
+      // Calculate scale factors
+      const scaleX = video.videoWidth / video.clientWidth;
+      const scaleY = video.videoHeight / video.clientHeight;
+      
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+      const scaledWidth = width * scaleX;
+      const scaledHeight = height * scaleY;
+
+      // Draw rectangle with thicker border
+      context.strokeStyle = `hsl(${(index * 137.5) % 360}, 80%, 60%)`;
+      context.lineWidth = 4;
+      context.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+      // Draw label background with better contrast
+      const labelText = `${label}: ${(confidence * 100).toFixed(0)}%`;
+      const textMetrics = context.measureText(labelText);
+      const textWidth = textMetrics.width;
+      const textHeight = 24;
+
+      // Background with border
+      context.fillStyle = `hsl(${(index * 137.5) % 360}, 80%, 20%)`;
+      context.fillRect(scaledX, scaledY - textHeight - 2, textWidth + 12, textHeight + 4);
+      
+      // Border
+      context.strokeStyle = `hsl(${(index * 137.5) % 360}, 80%, 60%)`;
+      context.lineWidth = 2;
+      context.strokeRect(scaledX, scaledY - textHeight - 2, textWidth + 12, textHeight + 4);
+
+      // Draw label text
+      context.fillStyle = 'white';
+      context.font = 'bold 16px Arial';
+      context.fillText(labelText, scaledX + 6, scaledY - 6);
     });
   };
 
@@ -77,6 +219,12 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
       }
 
       setDetectionResults(response);
+      
+      // Draw bounding boxes if detections exist
+      if (response.detections && response.detections.length > 0) {
+        setBoundingBoxes(response.detections);
+        setTimeout(() => drawBoundingBoxes(), 100);
+      }
     } catch (err) {
       setError(err.message || 'Detection failed. Please try again.');
       console.error('Detection error:', err);
@@ -154,21 +302,33 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
             {mode === 'serious' ? '🎯 Serious Mode' : '🎲 Fun Mode'}
           </h2>
         </div>
-        <button
-          onClick={handleDetection}
-          disabled={isDetecting}
-          className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-            isDetecting
-              ? 'bg-gray-500 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600 text-white'
-          }`}
-        >
-          {isDetecting ? 'Detecting...' : 'Detect & Analyze'}
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setIsRealTimeDetection(!isRealTimeDetection)}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              isRealTimeDetection
+                ? 'bg-green-500 hover:bg-green-600 text-white'
+                : 'bg-gray-600 hover:bg-gray-700 text-white'
+            }`}
+          >
+            {isRealTimeDetection ? '🟢 Live Detection ON' : '⚪ Live Detection OFF'}
+          </button>
+          <button
+            onClick={handleDetection}
+            disabled={isDetecting}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+              isDetecting
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            {isDetecting ? 'Detecting...' : 'Manual Detect'}
+          </button>
+        </div>
       </div>
 
-      {/* Camera View */}
-      <div className="flex-1 relative">
+      {/* Camera View - Full Screen */}
+      <div className="flex-1 relative h-screen">
         <video
           ref={videoRef}
           autoPlay
@@ -178,21 +338,49 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
         />
         <canvas
           ref={canvasRef}
-          className="hidden"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ zIndex: 5 }}
         />
         
-        {/* Overlay */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-4 left-4 bg-black bg-opacity-50 rounded-lg p-3">
+        {/* Status Overlay - Positioned to not interfere with detection boxes */}
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 15 }}>
+          <div className="absolute top-4 left-4 bg-black bg-opacity-70 rounded-lg p-3 max-w-xs">
             <div className="text-white text-sm">
-              {mode === 'serious' ? 'Point camera at people to detect networking opportunities' : 'Point camera at objects to create betting lines'}
+              {isRealTimeDetection ? (
+                <div>
+                  <div className="font-bold text-green-400 mb-1">🟢 Live Detection Active</div>
+                  <div>Detecting objects with 80%+ confidence</div>
+                </div>
+              ) : (
+                <div>
+                  {mode === 'serious' ? 'Point camera at people to detect networking opportunities' : 'Point camera at objects to create betting lines'}
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* Detection Status */}
+          {isRealTimeDetection && (
+            <div className="absolute top-4 right-4 bg-black bg-opacity-70 rounded-lg p-3">
+              <div className="text-white text-sm">
+                <div className="font-bold text-blue-400">Objects Detected: {boundingBoxes.length}</div>
+                {boundingBoxes.length > 0 && (
+                  <div className="text-xs mt-1">
+                    {boundingBoxes.map((box, i) => (
+                      <div key={i} className="text-green-300">
+                        {box.label} ({(box.confidence * 100).toFixed(0)}%)
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Detection Results */}
-        {detectionResults && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-95 backdrop-blur-lg p-6 max-h-96 overflow-y-auto">
+        {/* Detection Results - Only show when not in real-time mode */}
+        {detectionResults && !isRealTimeDetection && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-95 backdrop-blur-lg p-6 max-h-96 overflow-y-auto" style={{ zIndex: 20 }}>
             <div className="space-y-4">
               <div className="text-lg font-bold text-gray-800">
                 {detectionResults.message}
