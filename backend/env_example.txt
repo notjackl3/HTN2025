@@ -1,0 +1,13 @@
+# Cohere API Key for LLM features
+COHERE_API_KEY=your_cohere_api_key_here
+
+# Gemini API Key for enhanced LLM features (recommended)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# AWS Credentials for DynamoDB
+AWS_ACCESS_KEY_ID=your_aws_access_key_here
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
+AWS_REGION=us-east-1
+
+# Optional: OpenAI API Key (alternative to Cohere/Gemini)
+OPENAI_API_KEY=your_openai_api_key_here
