@@ -122,7 +122,7 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-blue-100 text-sm font-medium">Total Balance</CardTitle>
+                  <CardTitle className="text-blue-100 3text-sm font-medium">Total Balance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-white">{userBalance}</div>
