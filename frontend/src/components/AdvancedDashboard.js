@@ -174,8 +174,8 @@ const AdvancedDashboard = ({ onBack, onQuestComplete }) => {
                     {completedQuests.slice(0, 3).map((quest, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                         <div>
-                          <p className="text-white text-sm font-medium">{quest.description || 'Networking Quest'}</p>
-                          <p className="text-green-400 text-xs">+{quest.reward || 10} tokens</p>
+                          <p className="text-green-900 text-sm font-medium">{quest.description || 'Networking Quest'}</p>
+                          <p className="text-green-800 text-xs">+{quest.reward || 10} tokens</p>
                         </div>
                         <Badge variant="success">Completed</Badge>
                       </div>
