@@ -1,12 +1,14 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
+from pydantic import BaseModel
 import uvicorn
 import os
+import uuid
 from dotenv import load_dotenv
 
 from detect import detect_objects_enhanced, detect_faces
-from llm import create_sponsor_betting_lines, create_networking_prompt
+from llm import create_sponsor_betting_lines, create_networking_prompt, generate_quest_batch
 from db import DatabaseManager
 
 load_dotenv()
@@ -24,6 +26,13 @@ app.add_middleware(
 
 # Initialize database
 db = DatabaseManager()
+
+# Pydantic models for room management
+class CreateRoomRequest(BaseModel):
+    hostId: str
+
+class JoinRoomRequest(BaseModel):
+    userId: str
 
 @app.get("/")
 async def root():
@@ -231,6 +240,65 @@ async def get_user_bets(user_id: str):
     try:
         bets = await db.get_user_bets(user_id)
         return {"user_id": user_id, "bets": bets}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/{user_id}/quest-batch")
+async def generate_quest_batch_endpoint(user_id: str):
+    """Generate a new batch of 5 random quests for the user"""
+    try:
+        # Generate quest batch
+        quests = generate_quest_batch()
+        
+        # Store quests in database
+        created_quests = await db.create_quest_batch(user_id, quests)
+        
+        return {
+            "success": True,
+            "message": "New quest batch generated!",
+            "quests": created_quests,
+            "count": len(created_quests)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user/{user_id}/pending-quests")
+async def get_pending_quests(user_id: str):
+    """Get all pending quests for a user (from quest batches)"""
+    try:
+        quests = await db.get_pending_quests(user_id)
+        return {"user_id": user_id, "quests": quests}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/{user_id}/quest/{quest_id}/accept")
+async def accept_quest(quest_id: str, user_id: str):
+    """Accept a quest from a batch (keep it)"""
+    try:
+        quest = await db.accept_quest(quest_id, user_id)
+        if quest:
+            return {
+                "success": True,
+                "message": "Quest accepted!",
+                "quest": quest
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Quest not found or already processed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/{user_id}/quest/{quest_id}/reject")
+async def reject_quest(quest_id: str, user_id: str):
+    """Reject a quest from a batch (remove it)"""
+    try:
+        success = await db.reject_quest(quest_id, user_id)
+        if success:
+            return {
+                "success": True,
+                "message": "Quest rejected and removed"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Quest not found or already processed")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -499,6 +567,49 @@ async def admin_panel():
     </html>
     """
     return HTMLResponse(content=html_content)
+
+# Room Management Endpoints
+@app.post("/api/rooms/create")
+async def create_room(request: CreateRoomRequest):
+    """Create a new room for quest collaboration"""
+    try:
+        room_id = str(uuid.uuid4())[:8]  # Short room ID
+        room_data = {
+            "roomId": room_id,
+            "hostId": request.hostId,
+            "members": [{"userId": request.hostId, "name": "Host"}],
+            "createdAt": "2024-01-01T00:00:00Z"
+        }
+        
+        # Store room in database (you might want to implement this in db.py)
+        # For now, we'll return the room data
+        return {"roomId": room_id, "hostId": request.hostId}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/rooms/{room_id}/join")
+async def join_room(room_id: str, request: JoinRoomRequest):
+    """Join an existing room"""
+    try:
+        # In a real implementation, you'd check if room exists and add user
+        # For now, we'll just return success
+        return {"success": True, "roomId": room_id, "userId": request.userId}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/rooms/{room_id}/quests")
+async def get_room_quests(room_id: str):
+    """Get all quests for a room"""
+    try:
+        # Get quests for the room (you might want to implement this in db.py)
+        # For now, return empty arrays
+        return {
+            "pendingQuests": [],
+            "activeQuests": [],
+            "completedQuests": []
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

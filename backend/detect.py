@@ -51,11 +51,18 @@ def get_sponsor_category(object_name: str) -> Optional[Dict]:
         'cell phone': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.4},
         'tv': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.2},
         'remote': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.1},
+        'monitor': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.3},
+        'computer': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.4},
+        'tablet': {"category": "tech_giants", "sponsor": "Tech Giants", "multiplier": 1.3},
         
         # Food & Beverage
         'bottle': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.2},
         'wine glass': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.3},
         'cup': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.1},
+        'coffee cup': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.2},
+        'water bottle': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.2},
+        'mug': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.1},
+        'thermos': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.2},
         'fork': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.1},
         'knife': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.1},
         'spoon': {"category": "food_beverage", "sponsor": "Food & Beverage", "multiplier": 1.1},
@@ -130,6 +137,9 @@ def get_sponsor_category(object_name: str) -> Optional[Dict]:
         'teddy bear': {"category": "personal", "sponsor": "Toys", "multiplier": 1.2},
         'hair drier': {"category": "personal", "sponsor": "Beauty", "multiplier": 1.2},
         'toothbrush': {"category": "personal", "sponsor": "Health", "multiplier": 1.1},
+        'umbrella': {"category": "personal", "sponsor": "Fashion", "multiplier": 1.1},
+        'glasses': {"category": "personal", "sponsor": "Health", "multiplier": 1.1},
+        'watch': {"category": "personal", "sponsor": "Fashion", "multiplier": 1.2},
         
         # People
         'person': {"category": "people", "sponsor": "Social", "multiplier": 1.5},
@@ -137,7 +147,7 @@ def get_sponsor_category(object_name: str) -> Optional[Dict]:
     
     return sponsor_mapping.get(object_name.lower())
 
-def detect_objects_yolo_v8(image_bytes: bytes, confidence_threshold: float = 0.8) -> Dict:
+def detect_objects_yolo_v8(image_bytes: bytes, confidence_threshold: float = 0.5) -> Dict:
     """Detect objects using YOLO v8 with enhanced bounding box accuracy"""
     global yolo_model
     
@@ -227,7 +237,7 @@ def detect_objects_yolo_v8(image_bytes: bytes, confidence_threshold: float = 0.8
             "detections": []
         }
 
-def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.8) -> Dict:
+def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.5) -> Dict:
     """Enhanced object detection using YOLO v8 with fallback"""
     print(f"🔍 Starting object detection with confidence threshold: {confidence_threshold}")
     
@@ -235,9 +245,9 @@ def detect_objects_enhanced(image_bytes: bytes, confidence_threshold: float = 0.
     result = detect_objects_yolo_v8(image_bytes, confidence_threshold)
     
     # If no objects detected, try with lower confidence
-    if result["total_objects"] == 0 and confidence_threshold > 0.1:
+    if result["total_objects"] == 0 and confidence_threshold > 0.3:
         print("🔄 No objects detected, trying with lower confidence...")
-        result = detect_objects_yolo_v8(image_bytes, 0.1)
+        result = detect_objects_yolo_v8(image_bytes, 0.3)
     
     # If still no objects, provide demo data
     if result["total_objects"] == 0:

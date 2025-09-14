@@ -4,6 +4,7 @@ import google.generativeai as genai
 from typing import List, Dict
 import json
 import random
+from datetime import datetime
 
 # Initialize Cohere client
 cohere_api_key = os.getenv("COHERE_API_KEY")
@@ -333,3 +334,129 @@ def generate_quest_reward(quest_type: str, difficulty: str = "medium") -> int:
     multiplier = difficulty_multipliers.get(difficulty, 1.0)
     
     return int(base_reward * multiplier)
+
+def generate_quest_batch() -> List[Dict]:
+    """
+    Generate a batch of 5 random quest challenges for users to choose from
+    
+    Returns:
+        List of 5 quest dictionaries with random challenges and prompts
+    """
+    quest_templates = [
+        # Networking Quests
+        {
+            "type": "networking",
+            "difficulty": "easy",
+            "templates": [
+                "Introduce yourself to someone new and ask about their project",
+                "Exchange contact information with 2 people",
+                "Find someone working on a similar technology and discuss it",
+                "Ask 3 people about their hackathon experience so far",
+                "Share your project idea and get feedback from someone"
+            ]
+        },
+        {
+            "type": "networking", 
+            "difficulty": "medium",
+            "templates": [
+                "Organize a mini networking session with 4+ people",
+                "Find someone from a different background and learn about their perspective",
+                "Connect two people who should meet each other",
+                "Lead a discussion about emerging tech trends",
+                "Create a group chat for people interested in your domain"
+            ]
+        },
+        # Technical Quests
+        {
+            "type": "technical",
+            "difficulty": "easy", 
+            "templates": [
+                "Help someone debug their code",
+                "Share a useful tool or library with the community",
+                "Create a quick demo of your project",
+                "Explain a technical concept to someone new to it",
+                "Set up a collaborative workspace for your team"
+            ]
+        },
+        {
+            "type": "technical",
+            "difficulty": "medium",
+            "templates": [
+                "Build a quick integration between two different projects",
+                "Create a reusable component and share it",
+                "Mentor someone through their first API integration",
+                "Set up a live demo environment for multiple teams",
+                "Organize a code review session"
+            ]
+        },
+        # Social Quests
+        {
+            "type": "social",
+            "difficulty": "easy",
+            "templates": [
+                "Take a group photo with your new connections",
+                "Share your hackathon experience on social media",
+                "Join a team for a meal or coffee break",
+                "Participate in a team building activity",
+                "Share an interesting fact about yourself"
+            ]
+        },
+        {
+            "type": "social",
+            "difficulty": "medium", 
+            "templates": [
+                "Organize a team lunch or dinner",
+                "Create a shared playlist for your workspace",
+                "Start a group discussion about work-life balance in tech",
+                "Organize a quick team building game",
+                "Share your hackathon journey in a creative way"
+            ]
+        },
+        # Creative Quests
+        {
+            "type": "creative",
+            "difficulty": "easy",
+            "templates": [
+                "Create a fun team name and logo",
+                "Design a quick presentation for your project",
+                "Write a creative project description",
+                "Create a team motto or catchphrase",
+                "Design a simple wireframe for your idea"
+            ]
+        },
+        {
+            "type": "creative",
+            "difficulty": "medium",
+            "templates": [
+                "Create a demo video of your project",
+                "Design a pitch deck for your solution",
+                "Write a blog post about your hackathon experience",
+                "Create a visual diagram of your system architecture",
+                "Design a user journey map for your solution"
+            ]
+        }
+    ]
+    
+    # Generate 5 random quests
+    quests = []
+    for i in range(5):
+        # Randomly select a quest category
+        category = random.choice(quest_templates)
+        template = random.choice(category["templates"])
+        
+        # Generate reward based on type and difficulty
+        reward = generate_quest_reward(category["type"], category["difficulty"])
+        
+        quest = {
+            "quest_id": f"batch_quest_{i}_{random.randint(1000, 9999)}",
+            "type": category["type"],
+            "difficulty": category["difficulty"],
+            "description": template,
+            "reward": reward,
+            "status": "pending",  # User needs to choose keep/remove
+            "created_at": datetime.now().isoformat()
+        }
+        
+        quests.append(quest)
+    
+    return quests

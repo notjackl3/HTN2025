@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import AdvancedDashboard from './components/AdvancedDashboard';
 import CameraView from './components/CameraView';
 import ModeSelector from './components/ModeSelector';
 import TestModeSelector from './components/TestModeSelector';
+// import RoomCollaboration from './components/RoomCollaboration'; // Used in AdvancedDashboard
+import MobileRoomPage from './components/MobileRoomPage';
+import MobileJoinPage from './components/MobileJoinPage';
 import { getUserBalance, getUserQuests, getUserBets, healthCheck } from './services/api';
 
 function App() {
@@ -13,14 +17,14 @@ function App() {
   const [userBets, setUserBets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [backendStatus, setBackendStatus] = useState('checking');
-  const [useAdvancedDashboard, setUseAdvancedDashboard] = useState(true);
-  const [useTestMode, setUseTestMode] = useState(true);
+  const [useAdvancedDashboard] = useState(true);
+  const [useTestMode] = useState(true);
 
   const userId = 'default_user'; // In a real app, this would come from authentication
 
   useEffect(() => {
     checkBackendAndLoadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkBackendAndLoadData = async () => {
     try {
@@ -89,6 +93,19 @@ function App() {
     loadUserData(); // Refresh to get updated balance
   };
 
+  const handleQuestUpdate = (questData) => {
+    // Update quests from room collaboration
+    setUserQuests(prev => {
+      const activeQuests = questData.activeQuests || [];
+      const completedQuests = questData.completedQuests || [];
+      const pendingQuests = questData.pendingQuests || [];
+      
+      // Merge all quests, prioritizing active and completed
+      const allQuests = [...activeQuests, ...completedQuests, ...pendingQuests];
+      return allQuests;
+    });
+  };
+
   const handleBetPlaced = (betData) => {
     // Update local state optimistically
     setUserBets(prev => [...prev, betData]);
@@ -111,54 +128,66 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800 relative">
-      {/* Backend Status Indicator */}
-      {!currentMode ? (
-        useTestMode ? (
-          <TestModeSelector 
-            onModeSelect={handleModeSelect}
-            userBalance={userBalance}
-            backendStatus={backendStatus}
-          />
-        ) : (
-          <ModeSelector 
-            onModeSelect={handleModeSelect}
-            userBalance={userBalance}
-            backendStatus={backendStatus}
-          />
-        )
-      ) : (
-        <div className="flex h-screen">
-          <div className="w-1/3 bg-white bg-opacity-10 backdrop-blur-lg">
-            {useAdvancedDashboard ? (
-              <AdvancedDashboard 
-                onBack={handleBackToModeSelect}
-                onQuestComplete={handleQuestComplete}
-                userBalance={userBalance}
-                userQuests={userQuests}
-                userBets={userBets}
-              />
+    <Router>
+      <Routes>
+        {/* Mobile Room Pages */}
+        <Route path="/room/:roomId" element={<MobileRoomPage />} />
+        <Route path="/join/:roomId" element={<MobileJoinPage />} />
+        
+        {/* Main App */}
+        <Route path="/*" element={
+          <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800 relative">
+            {/* Backend Status Indicator */}
+            {!currentMode ? (
+              useTestMode ? (
+                <TestModeSelector 
+                  onModeSelect={handleModeSelect}
+                  userBalance={userBalance}
+                  backendStatus={backendStatus}
+                />
+              ) : (
+                <ModeSelector 
+                  onModeSelect={handleModeSelect}
+                  userBalance={userBalance}
+                  backendStatus={backendStatus}
+                />
+              )
             ) : (
-              <Dashboard 
-                userBalance={userBalance}
-                userQuests={userQuests}
-                userBets={userBets}
-                onBack={handleBackToModeSelect}
-                onQuestComplete={handleQuestComplete}
-              />
+              <div className="flex h-screen">
+                <div className="w-1/3 bg-white bg-opacity-10 backdrop-blur-lg">
+                  {useAdvancedDashboard ? (
+                    <AdvancedDashboard 
+                      onBack={handleBackToModeSelect}
+                      onQuestComplete={handleQuestComplete}
+                      onQuestUpdate={handleQuestUpdate}
+                      userBalance={userBalance}
+                      userQuests={userQuests}
+                      userBets={userBets}
+                    />
+                  ) : (
+                    <Dashboard 
+                      userBalance={userBalance}
+                      userQuests={userQuests}
+                      userBets={userBets}
+                      onBack={handleBackToModeSelect}
+                      onQuestComplete={handleQuestComplete}
+                    />
+                  )}
+                </div>
+                <div className="w-2/3">
+                  <CameraView 
+                    mode={currentMode}
+                    onQuestComplete={handleQuestComplete}
+                    onBetPlaced={handleBetPlaced}
+                    backendStatus={backendStatus}
+                  />
+                </div>
+              </div>
             )}
           </div>
-          <div className="w-2/3">
-            <CameraView 
-              mode={currentMode}
-              onQuestComplete={handleQuestComplete}
-              onBetPlaced={handleBetPlaced}
-              backendStatus={backendStatus}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+        } />
+      </Routes>
+    </Router>
   );
 }
 

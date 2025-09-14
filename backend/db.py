@@ -523,3 +523,120 @@ class DatabaseManager:
                 'bets_lost': 0,
                 'sponsor_breakdown': {}
             }
+    
+    async def create_quest_batch(self, user_id: str, quests: List[Dict]) -> List[Dict]:
+        """Create a batch of quests for a user to choose from"""
+        try:
+            created_quests = []
+            
+            for quest in quests:
+                quest_data = {
+                    'quest_id': quest['quest_id'],
+                    'user_id': user_id,
+                    'type': quest['type'],
+                    'difficulty': quest['difficulty'],
+                    'description': quest['description'],
+                    'reward': quest['reward'],
+                    'status': 'pending',  # User needs to choose keep/remove
+                    'created_at': quest['created_at'],
+                    'batch_id': f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                }
+                
+                if hasattr(self, 'memory_storage'):
+                    self.memory_storage['quests'][quest['quest_id']] = quest_data
+                else:
+                    self.quests_table.put_item(Item=quest_data)
+                
+                created_quests.append(quest_data)
+            
+            return created_quests
+            
+        except Exception as e:
+            print(f"Error creating quest batch: {e}")
+            return []
+    
+    async def accept_quest(self, quest_id: str, user_id: str) -> Dict:
+        """Accept a quest from a batch (change status from pending to active)"""
+        try:
+            if hasattr(self, 'memory_storage'):
+                if quest_id in self.memory_storage['quests']:
+                    quest = self.memory_storage['quests'][quest_id]
+                    if quest['user_id'] == user_id and quest['status'] == 'pending':
+                        quest['status'] = 'active'
+                        quest['accepted_at'] = datetime.now().isoformat()
+                        return quest
+                return {}
+            
+            # Update quest status in DynamoDB
+            response = self.quests_table.update_item(
+                Key={'quest_id': quest_id},
+                UpdateExpression='SET #status = :status, accepted_at = :accepted_at',
+                ConditionExpression='user_id = :user_id AND #status = :pending_status',
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={
+                    ':status': 'active',
+                    ':accepted_at': datetime.now().isoformat(),
+                    ':user_id': user_id,
+                    ':pending_status': 'pending'
+                },
+                ReturnValues='ALL_NEW'
+            )
+            
+            return response.get('Attributes', {})
+            
+        except Exception as e:
+            print(f"Error accepting quest: {e}")
+            return {}
+    
+    async def reject_quest(self, quest_id: str, user_id: str) -> bool:
+        """Reject a quest from a batch (remove it)"""
+        try:
+            if hasattr(self, 'memory_storage'):
+                if quest_id in self.memory_storage['quests']:
+                    quest = self.memory_storage['quests'][quest_id]
+                    if quest['user_id'] == user_id and quest['status'] == 'pending':
+                        del self.memory_storage['quests'][quest_id]
+                        return True
+                return False
+            
+            # Delete quest from DynamoDB
+            self.quests_table.delete_item(
+                Key={'quest_id': quest_id},
+                ConditionExpression='user_id = :user_id AND #status = :pending_status',
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={
+                    ':user_id': user_id,
+                    ':pending_status': 'pending'
+                }
+            )
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error rejecting quest: {e}")
+            return False
+    
+    async def get_pending_quests(self, user_id: str) -> List[Dict]:
+        """Get all pending quests for a user (from quest batches)"""
+        try:
+            if hasattr(self, 'memory_storage'):
+                quests = [q for q in self.memory_storage['quests'].values() 
+                         if q['user_id'] == user_id and q['status'] == 'pending']
+                return quests
+            
+            response = self.quests_table.query(
+                IndexName='user-quests-index',
+                KeyConditionExpression='user_id = :user_id',
+                FilterExpression='#status = :status',
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={
+                    ':user_id': user_id,
+                    ':status': 'pending'
+                }
+            )
+            
+            return response.get('Items', [])
+            
+        except Exception as e:
+            print(f"Error getting pending quests: {e}")
+            return []

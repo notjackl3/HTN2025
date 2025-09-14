@@ -11,6 +11,7 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
   const [boundingBoxes, setBoundingBoxes] = useState([]);
   const [isRealTimeDetection, setIsRealTimeDetection] = useState(true);
   const [detectionInterval, setDetectionInterval] = useState(null);
+  const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
 
   useEffect(() => {
     startCamera();
@@ -29,7 +30,7 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
     const video = videoRef.current;
     if (video) {
       const handleLoadedMetadata = () => {
-        if (detectionResults?.detections) {
+        if (detectionResults?.detections && showBoundingBoxes) {
           setTimeout(() => drawBoundingBoxes(), 100);
         }
       };
@@ -37,7 +38,16 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
       video.addEventListener('loadedmetadata', handleLoadedMetadata);
       return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
     }
-  }, [detectionResults]);
+  }, [detectionResults, showBoundingBoxes]);
+
+  // Redraw bounding boxes when toggle changes
+  useEffect(() => {
+    if (showBoundingBoxes && boundingBoxes.length > 0) {
+      setTimeout(() => drawBoundingBoxes(), 100);
+    } else if (!showBoundingBoxes) {
+      clearBoundingBoxes();
+    }
+  }, [showBoundingBoxes, boundingBoxes]);
 
   // Real-time detection effect
   useEffect(() => {
@@ -127,18 +137,28 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
         response = await funModeDetection(formData);
       }
 
-      // Filter detections with 80%+ confidence
+      // Filter detections with 50%+ confidence for better detection
       const highConfidenceDetections = response.detections?.filter(
-        detection => detection.confidence >= 0.8
+        detection => detection.confidence >= 0.5
       ) || [];
+
+      console.log('🔍 Detection results:', {
+        totalDetections: response.detections?.length || 0,
+        highConfidenceDetections: highConfidenceDetections.length,
+        detections: highConfidenceDetections
+      });
 
       if (highConfidenceDetections.length > 0) {
         setBoundingBoxes(highConfidenceDetections);
-        setTimeout(() => drawBoundingBoxes(), 50);
+        if (showBoundingBoxes) {
+          setTimeout(() => drawBoundingBoxes(), 50);
+        }
       } else {
         // Clear boxes if no high confidence detections
         setBoundingBoxes([]);
-        clearBoundingBoxes();
+        if (showBoundingBoxes) {
+          clearBoundingBoxes();
+        }
       }
     } catch (err) {
       console.error('Real-time detection error:', err);
@@ -153,16 +173,31 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
     context.clearRect(0, 0, canvas.width, canvas.height);
   };
 
+
   const drawBoundingBoxes = () => {
-    if (!videoRef.current || !boundingBoxes.length) return;
+    if (!videoRef.current || !boundingBoxes.length) {
+      console.log('🚫 Cannot draw bounding boxes:', {
+        hasVideo: !!videoRef.current,
+        boundingBoxesCount: boundingBoxes.length
+      });
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Set canvas size to match video display size (not video dimensions)
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+
+    console.log('🎨 Drawing bounding boxes:', {
+      videoSize: { width: video.videoWidth, height: video.videoHeight },
+      videoClientSize: { width: video.clientWidth, height: video.clientHeight },
+      canvasSize: { width: canvas.width, height: canvas.height },
+      boundingBoxesCount: boundingBoxes.length,
+      boundingBoxes: boundingBoxes
+    });
 
     // Clear previous drawings
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -171,39 +206,82 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
     boundingBoxes.forEach((detection, index) => {
       const { x, y, width, height, label, confidence } = detection;
       
-      // Calculate scale factors
-      const scaleX = video.videoWidth / video.clientWidth;
-      const scaleY = video.videoHeight / video.clientHeight;
+      console.log(`📦 Drawing box ${index}:`, {
+        original: { x, y, width, height },
+        label,
+        confidence
+      });
+
+      // Calculate scale factors from video dimensions to display dimensions
+      const scaleX = video.clientWidth / video.videoWidth;
+      const scaleY = video.clientHeight / video.videoHeight;
       
       const scaledX = x * scaleX;
       const scaledY = y * scaleY;
       const scaledWidth = width * scaleX;
       const scaledHeight = height * scaleY;
 
-      // Draw rectangle with thicker border
-      context.strokeStyle = `hsl(${(index * 137.5) % 360}, 80%, 60%)`;
-      context.lineWidth = 4;
-      context.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+      console.log(`📏 Scaled coordinates:`, {
+        scaled: { x: scaledX, y: scaledY, width: scaledWidth, height: scaledHeight },
+        scaleFactors: { scaleX, scaleY }
+      });
+
+      // Ensure coordinates are within canvas bounds
+      const clampedX = Math.max(0, Math.min(scaledX, canvas.width - scaledWidth));
+      const clampedY = Math.max(0, Math.min(scaledY, canvas.height - scaledHeight));
+      const clampedWidth = Math.min(scaledWidth, canvas.width - clampedX);
+      const clampedHeight = Math.min(scaledHeight, canvas.height - clampedY);
+
+      console.log(`🎯 Final coordinates:`, {
+        clamped: { x: clampedX, y: clampedY, width: clampedWidth, height: clampedHeight }
+      });
+
+      // Generate a more vibrant color
+      const hue = (index * 137.5) % 360;
+      const color = `hsl(${hue}, 85%, 55%)`;
+      const darkColor = `hsl(${hue}, 85%, 25%)`;
+
+      // Draw rectangle with thinner border and shadow
+      context.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      context.shadowBlur = 3;
+      context.shadowOffsetX = 1;
+      context.shadowOffsetY = 1;
+      
+      context.strokeStyle = color;
+      context.lineWidth = 3;
+      context.strokeRect(clampedX, clampedY, clampedWidth, clampedHeight);
+
+      // Reset shadow
+      context.shadowColor = 'transparent';
+      context.shadowBlur = 0;
+      context.shadowOffsetX = 0;
+      context.shadowOffsetY = 0;
 
       // Draw label background with better contrast
       const labelText = `${label}: ${(confidence * 100).toFixed(0)}%`;
+      context.font = 'bold 20px Arial';
       const textMetrics = context.measureText(labelText);
       const textWidth = textMetrics.width;
-      const textHeight = 24;
+      const textHeight = 30;
 
+      // Position label above the box, or below if not enough space
+      const labelY = clampedY - textHeight - 6 > 0 ? clampedY - 6 : clampedY + clampedHeight + textHeight + 6;
+      
       // Background with border
-      context.fillStyle = `hsl(${(index * 137.5) % 360}, 80%, 20%)`;
-      context.fillRect(scaledX, scaledY - textHeight - 2, textWidth + 12, textHeight + 4);
+      context.fillStyle = darkColor;
+      context.fillRect(clampedX, labelY - textHeight, textWidth + 20, textHeight + 10);
       
       // Border
-      context.strokeStyle = `hsl(${(index * 137.5) % 360}, 80%, 60%)`;
+      context.strokeStyle = color;
       context.lineWidth = 2;
-      context.strokeRect(scaledX, scaledY - textHeight - 2, textWidth + 12, textHeight + 4);
+      context.strokeRect(clampedX, labelY - textHeight, textWidth + 20, textHeight + 10);
 
       // Draw label text
       context.fillStyle = 'white';
-      context.font = 'bold 16px Arial';
-      context.fillText(labelText, scaledX + 6, scaledY - 6);
+      context.font = 'bold 20px Arial';
+      context.fillText(labelText, clampedX + 10, labelY - 6);
+
+      console.log(`✅ Drew box ${index} at:`, { x: clampedX, y: clampedY, width: clampedWidth, height: clampedHeight });
     });
   };
 
@@ -231,10 +309,12 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
 
       setDetectionResults(response);
       
-      // Draw bounding boxes if detections exist
+      // Draw bounding boxes if detections exist and toggle is on
       if (response.detections && response.detections.length > 0) {
         setBoundingBoxes(response.detections);
-        setTimeout(() => drawBoundingBoxes(), 100);
+        if (showBoundingBoxes) {
+          setTimeout(() => drawBoundingBoxes(), 100);
+        }
       }
     } catch (err) {
       setError(err.message || 'Detection failed. Please try again.');
@@ -315,21 +395,52 @@ const CameraView = ({ mode, onQuestComplete, onBetPlaced }) => {
           style={{ zIndex: 5 }}
         />
         
-        {/* Minimal Status - Only show when objects are detected */}
-        {boundingBoxes.length > 0 && (
-          <div className="absolute top-4 right-4 z-20 bg-black bg-opacity-70 rounded-lg p-3">
-            <div className="text-white text-sm">
-              <div className="font-bold text-green-400">Objects: {boundingBoxes.length}</div>
-              <div className="text-xs mt-1">
+        {/* Control Panel */}
+        <div className="absolute top-4 left-4 z-20 space-y-2">
+          {/* Bounding Box Toggle */}
+          <div className="bg-black bg-opacity-70 rounded-lg p-3">
+            <div className="flex items-center space-x-3">
+              <label className="text-white text-sm font-medium">Show Bounding Boxes:</label>
+              <button
+                onClick={() => setShowBoundingBoxes(!showBoundingBoxes)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  showBoundingBoxes 
+                    ? 'bg-green-500 hover:bg-green-600 text-white' 
+                    : 'bg-gray-500 hover:bg-gray-600 text-white'
+                }`}
+              >
+                {showBoundingBoxes ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="text-xs text-gray-300 mt-1">
+              {showBoundingBoxes ? 'Boxes will appear around detected objects' : 'Bounding boxes are hidden'}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Status Panel - Show detection info */}
+        <div className="absolute top-4 right-4 z-20 bg-black bg-opacity-70 rounded-lg p-3">
+          <div className="text-white text-sm">
+            <div className="font-bold text-green-400">
+              Detected: {boundingBoxes.length}
+              {!showBoundingBoxes && <span className="text-yellow-400 ml-2">(Hidden)</span>}
+            </div>
+            <div className="text-xs mt-1 text-gray-300">
+              Mode: {mode === 'serious' ? 'People Detection' : 'Object Detection'} • {isRealTimeDetection ? 'Real-time' : 'Manual'}
+            </div>
+            {boundingBoxes.length > 0 && (
+              <div className="text-xs mt-2 max-h-32 overflow-y-auto">
                 {boundingBoxes.map((box, i) => (
-                  <div key={i} className="text-green-300">
-                    {box.label} ({(box.confidence * 100).toFixed(0)}%)
+                  <div key={i} className="text-green-300 flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: `hsl(${(i * 137.5) % 360}, 85%, 55%)` }}></div>
+                    <span>{box.label} ({(box.confidence * 100).toFixed(0)}%)</span>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
 
         {/* Error Message */}

@@ -149,6 +149,46 @@ export const getUserBets = async (userId = 'default_user') => {
   }
 };
 
+export const generateQuestBatch = async (userId = 'default_user') => {
+  try {
+    const response = await api.post(`/user/${userId}/quest-batch`);
+    return response.data;
+  } catch (error) {
+    console.error('Generate quest batch error:', error);
+    throw error;
+  }
+};
+
+export const getPendingQuests = async (userId = 'default_user') => {
+  try {
+    const response = await api.get(`/user/${userId}/pending-quests`);
+    return response.data;
+  } catch (error) {
+    console.error('Get pending quests error:', error);
+    throw error;
+  }
+};
+
+export const acceptQuest = async (questId, userId = 'default_user') => {
+  try {
+    const response = await api.post(`/user/${userId}/quest/${questId}/accept`);
+    return response.data;
+  } catch (error) {
+    console.error('Accept quest error:', error);
+    throw error;
+  }
+};
+
+export const rejectQuest = async (questId, userId = 'default_user') => {
+  try {
+    const response = await api.post(`/user/${userId}/quest/${questId}/reject`);
+    return response.data;
+  } catch (error) {
+    console.error('Reject quest error:', error);
+    throw error;
+  }
+};
+
 // Health check
 export const healthCheck = async () => {
   try {
