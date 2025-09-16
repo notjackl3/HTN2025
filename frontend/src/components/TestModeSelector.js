@@ -16,7 +16,7 @@ const TestModeSelector = ({ onModeSelect, userBalance }) => {
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-9xl font-bold text-black mb-4 px-8 py-6 bg-slate-200">
-            GooseTokens
+            GooseGoGeese
           </h1>
           <p className="text-xl text-black mb-8">
             Hackathon Networking & Betting Platform
@@ -24,7 +24,7 @@ const TestModeSelector = ({ onModeSelect, userBalance }) => {
           <div className="bg-transparent border-2 border-black p-4 inline-block">
             <div className="text-sm text-black">You have:</div>
             <div className="text-2xl font-bold text-black-300">
-              {userBalance} GooseTokens
+              {userBalance} GooseGoGeese Tokens
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@ const TestModeSelector = ({ onModeSelect, userBalance }) => {
           >
             <h2 className="text-3xl font-bold text-black mb-4">Serious Mode 💀</h2>
             <p className="text-black mb-6">
-              Network with fellow hackers! Use face detection to find networking opportunities and complete quests to earn GooseTokens.
+              Network with fellow hackers! Use face detection to find networking opportunities and complete quests to earn GooseGoGeese tokens.
             </p>
             <div className="text-sm text-black-200">(Click to start networking)</div>
           </button>

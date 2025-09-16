@@ -172,4 +172,4 @@ npm start
 
 ---
 
-**Built with ❤️ for collaborative quest management!**
+**Built with ❤️ for collaborative quest management in GooseGoGeese!**

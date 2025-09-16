@@ -41,7 +41,7 @@ const Dashboard = ({ userBalance, userQuests, userBets, onBack, onQuestComplete 
           <div className="text-3xl font-bold text-gray-800">
             {userBalance} 🦆
           </div>
-          <div className="text-sm text-gray-700">GooseTokens</div>
+          <div className="text-sm text-gray-700">GooseGoGeese Tokens</div>
         </div>
       </div>
 
@@ -227,7 +227,7 @@ const Dashboard = ({ userBalance, userQuests, userBets, onBack, onQuestComplete 
       {/* Footer */}
       <div className="p-6 border-t border-white border-opacity-20">
         <div className="text-center text-blue-200 text-sm">
-          🦆 GooseTokens • HTN 2025
+          🦆 GooseGoGeese • HTN 2025
         </div>
       </div>
     </div>

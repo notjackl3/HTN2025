@@ -17,14 +17,14 @@ const ModeSelector = ({ onModeSelect, userBalance }) => {
         {/* Header */}
         <div className="mb-12 fade-in">
           <h1 className="text-6xl font-bold text-white mb-4">
-            🦆 GooseTokens
+            🦆 GooseGoGeese
           </h1>
           <p className="text-xl text-blue-100 mb-8">
             Hackathon Networking & Betting Platform
           </p>
           <div className="bg-white bg-opacity-20 rounded-lg p-4 inline-block">
             <div className="text-2xl font-bold text-yellow-300">
-              {userBalance} GooseTokens
+              {userBalance} GooseGoGeese Tokens
             </div>
             <div className="text-sm text-blue-100">Your Balance</div>
           </div>
@@ -40,7 +40,7 @@ const ModeSelector = ({ onModeSelect, userBalance }) => {
             <div className="text-6xl mb-4">🎯</div>
             <h2 className="text-3xl font-bold text-white mb-4">Serious Mode</h2>
             <p className="text-blue-100 mb-6">
-              Network with fellow hackers! Use face detection to find networking opportunities and complete quests to earn GooseTokens.
+              Network with fellow hackers! Use face detection to find networking opportunities and complete quests to earn GooseGoGeese tokens.
             </p>
             <div className="space-y-2 text-left">
               <div className="flex items-center text-green-200">

@@ -308,7 +308,7 @@ def create_mock_networking_prompt(face_info: Dict) -> str:
 
 def generate_quest_reward(quest_type: str, difficulty: str = "medium") -> int:
     """
-    Generate appropriate GooseToken reward for quest completion
+    Generate appropriate GooseGoGeese token reward for quest completion
     
     Args:
         quest_type: Type of quest (networking, technical, social)

@@ -18,10 +18,10 @@ class DatabaseManager:
         )
         
         # Initialize tables
-        self.users_table = self.dynamodb.Table('goose_tokens_users')
-        self.quests_table = self.dynamodb.Table('goose_tokens_quests')
-        self.bets_table = self.dynamodb.Table('goose_tokens_bets')
-        self.money_stats_table = self.dynamodb.Table('goose_tokens_money_stats')
+        self.users_table = self.dynamodb.Table('goose_go_geese_users')
+        self.quests_table = self.dynamodb.Table('goose_go_geese_quests')
+        self.bets_table = self.dynamodb.Table('goose_go_geese_bets')
+        self.money_stats_table = self.dynamodb.Table('goose_go_geese_money_stats')
         
         # Create tables if they don't exist (for local development)
         self._create_tables_if_not_exist()
@@ -43,7 +43,7 @@ class DatabaseManager:
         try:
             # Users table
             self.dynamodb.create_table(
-                TableName='goose_tokens_users',
+                TableName='goose_go_geese_users',
                 KeySchema=[
                     {'AttributeName': 'user_id', 'KeyType': 'HASH'}
                 ],
@@ -55,7 +55,7 @@ class DatabaseManager:
             
             # Quests table
             self.dynamodb.create_table(
-                TableName='goose_tokens_quests',
+                TableName='goose_go_geese_quests',
                 KeySchema=[
                     {'AttributeName': 'quest_id', 'KeyType': 'HASH'}
                 ],
@@ -77,7 +77,7 @@ class DatabaseManager:
             
             # Bets table
             self.dynamodb.create_table(
-                TableName='goose_tokens_bets',
+                TableName='goose_go_geese_bets',
                 KeySchema=[
                     {'AttributeName': 'bet_id', 'KeyType': 'HASH'}
                 ],
@@ -99,7 +99,7 @@ class DatabaseManager:
             
             # Money stats table
             self.dynamodb.create_table(
-                TableName='goose_tokens_money_stats',
+                TableName='goose_go_geese_money_stats',
                 KeySchema=[
                     {'AttributeName': 'user_id', 'KeyType': 'HASH'}
                 ],

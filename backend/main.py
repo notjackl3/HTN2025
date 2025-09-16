@@ -13,7 +13,7 @@ from db import DatabaseManager
 
 load_dotenv()
 
-app = FastAPI(title="GooseTokens API", version="1.0.0")
+app = FastAPI(title="GooseGoGeese API", version="1.0.0")
 
 # CORS middleware for React frontend
 app.add_middleware(
@@ -36,7 +36,7 @@ class JoinRoomRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "GooseTokens API is running!"}
+    return {"message": "GooseGoGeese API is running!"}
 
 @app.post("/serious-mode")
 async def serious_mode(file: UploadFile = File(...)):
@@ -106,7 +106,7 @@ async def fun_mode(file: UploadFile = File(...)):
 
 @app.post("/complete-quest")
 async def complete_quest(quest_id: str, user_id: str = "default_user"):
-    """Complete a quest and award GooseTokens"""
+    """Complete a quest and award GooseGoGeese tokens"""
     try:
         # Award tokens for completing quest
         tokens_awarded = 10
@@ -119,7 +119,7 @@ async def complete_quest(quest_id: str, user_id: str = "default_user"):
             "success": True,
             "tokens_awarded": tokens_awarded,
             "new_balance": new_balance,
-            "message": f"Quest completed! You earned {tokens_awarded} GooseTokens!"
+            "message": f"Quest completed! You earned {tokens_awarded} GooseGoGeese tokens!"
         }
     
     except Exception as e:
@@ -138,7 +138,7 @@ async def place_bet(bet_data: dict):
         # Check if user has enough tokens
         user_balance = await db.get_user_balance(user_id)
         if user_balance < stake:
-            raise HTTPException(status_code=400, detail="Insufficient GooseTokens!")
+            raise HTTPException(status_code=400, detail="Insufficient GooseGoGeese tokens!")
         
         # Calculate potential winnings
         potential_winnings = int(stake * multiplier)
@@ -164,7 +164,7 @@ async def place_bet(bet_data: dict):
             "sponsor": sponsor,
             "multiplier": multiplier,
             "potential_winnings": potential_winnings,
-            "message": f"Bet placed! You wagered {stake} GooseTokens on: {betting_line} (Sponsored by {sponsor})"
+            "message": f"Bet placed! You wagered {stake} GooseGoGeese tokens on: {betting_line} (Sponsored by {sponsor})"
         }
     
     except Exception as e:
@@ -198,7 +198,7 @@ async def resolve_bet(bet_id: str, won: bool, user_id: str = "default_user"):
         return {
             "success": True,
             "result": money_result,
-            "message": f"Bet {'won' if won else 'lost'}! {'+' if won else '-'}{abs(money_result['net_result'])} GooseTokens"
+            "message": f"Bet {'won' if won else 'lost'}! {'+' if won else '-'}{abs(money_result['net_result'])} GooseGoGeese tokens"
         }
     
     except Exception as e:
@@ -218,7 +218,7 @@ async def get_money_stats(user_id: str):
 
 @app.get("/user/{user_id}/balance")
 async def get_user_balance(user_id: str):
-    """Get user's GooseToken balance"""
+    """Get user's GooseGoGeese token balance"""
     try:
         balance = await db.get_user_balance(user_id)
         return {"user_id": user_id, "balance": balance}
@@ -441,7 +441,7 @@ async def admin_panel():
     <body>
         <div class="container">
             <div class="header">
-                <h1>🦆 GooseTokens Admin Panel</h1>
+                <h1>🦆 GooseGoGeese Admin Panel</h1>
                 <p>Real-time monitoring and management dashboard</p>
             </div>
             
@@ -560,7 +560,7 @@ async def admin_panel():
             </div>
 
             <div class="footer">
-                <p>🦆 GooseTokens Admin Panel | Built with FastAPI | Real-time monitoring dashboard</p>
+                <p>🦆 GooseGoGeese Admin Panel | Built with FastAPI | Real-time monitoring dashboard</p>
             </div>
         </div>
     </body>

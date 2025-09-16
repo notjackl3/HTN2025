@@ -117,7 +117,7 @@ function App() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800">
         <div className="text-center">
           <div className="text-6xl mb-4 animate-bounce">🦆</div>
-          <div className="text-white text-2xl font-bold mb-2">Loading GooseTokens...</div>
+          <div className="text-white text-2xl font-bold mb-2">Loading GooseGoGeese...</div>
           <div className="text-blue-200 text-sm">Connecting to backend...</div>
           <div className="mt-4 w-64 bg-white bg-opacity-20 rounded-full h-2">
             <div className="bg-yellow-400 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>

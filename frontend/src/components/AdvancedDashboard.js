@@ -130,7 +130,7 @@ const AdvancedDashboard = ({ onBack, onQuestComplete, onQuestUpdate }) => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-white">{userBalance}</div>
-                  <p className="text-blue-200 text-xs">GooseTokens</p>
+                  <p className="text-blue-200 text-xs">GooseGoGeese Tokens</p>
                 </CardContent>
               </Card>
 
